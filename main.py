@@ -26,7 +26,7 @@ class GPT4Wrapper:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible.",
+                    "content": "You are a reviewer from the academic journal Nature, please answer my questions from the reviewer's perspective.",
                 },
                 {"role": "user", "content": user_str},
             ],
@@ -208,14 +208,14 @@ Main Content:
         wrapper,
     )
 
-    text_to_send = f"""Your task now is to draft a high-quality review outline for a top-tier Machine Learning (ML) conference for a submission titled "{parsed_xml['title']}":
+    text_to_send = f"""Your task now is to draft a high-quality review outline for a top-tier Biological conference for a submission titled "{parsed_xml['title']}":
 
 {truncated_paper}
 
 
 ======
 Your task:
-Compose a high-quality peer review of an ML paper submitted to a top-tier ML conference on OpenReview.
+Compose a high-quality peer review of an Biological paper submitted to a top-tier Biological conference on OpenReview.
 
 Start by "Review outline:".
 And then:
