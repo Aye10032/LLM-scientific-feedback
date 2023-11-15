@@ -5,17 +5,20 @@ import xml.etree.ElementTree as ET
 from typing import Dict
 
 import gradio as gr
-import openai
+from openai import OpenAI
 import pikepdf
 import requests
 import tiktoken
+
+from config import API_KEY, PDF_SERVER_PORT, PORT, AUTH
+
+client = OpenAI(api_key=API_KEY)
 
 
 class GPT4Wrapper:
     def __init__(self, model_name="gpt-3.5-turbo"):
         self.model_name = model_name
         self.tokenizer = tiktoken.encoding_for_model(self.model_name)
-        openai.api_key = open("key.txt").read().strip()
 
     def make_query_args(self, user_str, n_query=1):
         query_args = {
@@ -37,7 +40,7 @@ class GPT4Wrapper:
     def send_query(self, user_str, n_query=1):
         print(f"# tokens sent to GPT: {self.compute_num_tokens(user_str)}")
         query_args = self.make_query_args(user_str, n_query)
-        completion = openai.ChatCompletion.create(**query_args)
+        completion = client.chat.completions.create(**query_args)
         result = completion.choices[0]["message"]["content"]
         return result
 
@@ -234,7 +237,7 @@ def step1_get_xml(input_file: str) -> str:
     output_pdf = pikepdf.Pdf.new()
 
     for page_num in range(
-        min(10, len(input_pdf.pages))
+            min(10, len(input_pdf.pages))
     ):  # TODO: Currently only first 10 pages
         output_pdf.pages.append(input_pdf.pages[page_num])
 
@@ -244,7 +247,7 @@ def step1_get_xml(input_file: str) -> str:
 
     # Send the POST request to the conversion service
     headers = {"Content-Type": "application/pdf"}
-    convert_url = "http://localhost:8080/api/convert"
+    convert_url = f"http://localhost:{PDF_SERVER_PORT}/api/convert"
     response = requests.post(
         convert_url, headers=headers, data=output_stream.getvalue()
     )
@@ -321,10 +324,10 @@ def main():
     output_component_review = gr.Textbox(label="Review Generated")
 
     demo = gr.Interface(
-        fn=process, inputs=upload_component, outputs=output_component_review
+        fn=process, inputs=upload_component, outputs=output_component_review, concurrency_limit=3
     )
-    demo.queue(concurrency_count=3)
-    demo.launch(server_name="0.0.0.0", server_port=7799)
+    demo.queue()
+    demo.launch(server_name="0.0.0.0", server_port=PORT, auth=AUTH)
 
 
 if __name__ == "__main__":
