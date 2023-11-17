@@ -5,18 +5,23 @@ import xml.etree.ElementTree as ET
 from typing import Dict
 
 import gradio as gr
+import httpx
 from openai import OpenAI
 import pikepdf
 import requests
 import tiktoken
 
-from config import API_KEY, PDF_SERVER_PORT, PORT, AUTH
+from config import *
 
-client = OpenAI(api_key=API_KEY)
+if USE_PROXY:
+    http_client = httpx.Client(proxies=PROXY)
+    client = OpenAI(api_key=API_KEY, http_client=http_client)
+else:
+    client = OpenAI(api_key=API_KEY)
 
 
 class GPT4Wrapper:
-    def __init__(self, model_name="gpt-3.5-turbo"):
+    def __init__(self, model_name="gpt-4"):
         self.model_name = model_name
         self.tokenizer = tiktoken.encoding_for_model(self.model_name)
 
@@ -41,7 +46,7 @@ class GPT4Wrapper:
         print(f"# tokens sent to GPT: {self.compute_num_tokens(user_str)}")
         query_args = self.make_query_args(user_str, n_query)
         completion = client.chat.completions.create(**query_args)
-        result = completion.choices[0]["message"]["content"]
+        result = completion.choices[0].message.content
         return result
 
 
@@ -286,6 +291,7 @@ def step2_parse_xml(xml: str) -> Dict:
 
 def step3_get_lm_review(parsed_xml: Dict) -> Dict:
     text_to_send = prompt_function_truncated_full_paper(parsed_xml)
+    print(text_to_send)
     review_generated = wrapper.send_query(text_to_send, n_query=1)
     return {"text_to_send": text_to_send, "review_generated": review_generated}
 
